@@ -1,0 +1,15 @@
+{
+    "compileOnSave": false,
+    "compilerOptions": {
+        "strict": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "sourceMap": true,
+        "target": "es6",
+        "lib": ["webworker", "dom", "es5", "scripthost"],
+        "jsx": "react"
+    },
+    "include": [
+        "src/MandelbrotSet.ts"
+    ]
+}
