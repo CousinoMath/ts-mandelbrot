@@ -5,8 +5,7 @@
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
         "sourceMap": true,
-        "target": "es6",
-        "lib": ["webworker", "dom", "es5", "scripthost"],
+        "target": "es5",
         "jsx": "react"
     },
     "include": [

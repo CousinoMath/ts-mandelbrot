@@ -1,9 +1,9 @@
-export interface Complex {
+export type Complex = {
   real: number;
   imag: number;
 }
 
-export interface Viewport2D {
+export type Viewport2D = {
   height: number;
   width: number;
   xmin: number;
@@ -45,8 +45,8 @@ export function MandelbrotVP(escapeR: number, maxIters: number): (vp: Viewport2D
     if (size >= (1 << 32)) {
       return arr;
     }
-    for(let yi = 0; yi < vp.height; yi++) {
-      for(let xi = 0; xi < vp.width; xi++) {
+    for (let yi = 0; yi < vp.height; yi++) {
+      for (let xi = 0; xi < vp.width; xi++) {
         arr.push(mandelbrot({ real: vp.xmin + xi * xDelta, imag: vp.ymin + yi * yDelta }));
       }
     }
