@@ -5,10 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Mandelbrot Set</title>
+    <script src="index.ts"></script>
 </head>
 <body>
     <main>
         <canvas id="mandelbrot"></canvas>
     </main>
+    <script type="text/javascript">
+        var canvas = document.getElementById("mandelbrot");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        var mandelbrot = new MandelbrotApp(canvas);
+    </script>
 </body>
 </html>

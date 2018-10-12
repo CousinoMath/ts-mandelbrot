@@ -1,66 +1,94 @@
-type Complex = {
-    real: number;
-    imag: number;
-};
-
-function complex(re: number, imag: number): Complex {
+"use strict";
+function complex(re, imag) {
     return { real: re, imag: imag };
 }
-
-function complexPlus(x: Complex, y: Complex): Complex {
+function complexPlus(x, y) {
     return complex(x.real + y.real, x.imag + y.imag);
 }
-
-function complexMinus(x: Complex, y: Complex): Complex {
+function complexMinus(x, y) {
     return complex(x.real - y.real, x.imag - y.imag);
 }
-
-function complexSquare(x: Complex): Complex {
+function complexSquare(x) {
     return complex(x.real * x.real - x.imag * x.imag, 2 * x.real * x.imag);
 }
-
-type Viewport2D = {
-    height: number;
-    width: number;
-    xmin: number;
-    xmax: number;
-    ymin: number;
-    ymax: number;
-}
-
-type PointerCache = {
-    pointerId: number;
-    movement: Complex;
-    position: Complex;
-}
-
-function convertPointerEvent(ev: PointerEvent): PointerCache {
+function convertPointerEvent(ev) {
     return {
         pointerId: ev.pointerId,
         movement: complex(ev.movementX, ev.movementY),
         position: complex(ev.clientX, ev.clientY)
     };
 }
-
 class MandelbrotApp {
-    private viewport: Viewport2D = { width: 0, height: 0, xmin: -3, xmax: 2, ymin: -2.5, ymax: 2.5 };
-    private escapeRadius = 10;
-    private maxIterations = 85;
-    private canvas: HTMLCanvasElement;
-    private context: CanvasRenderingContext2D | null = null;
-    private imageData: ImageData | null = null;
-    private pointerState = new Array<PointerCache>();
-    private pan = complex(0, 0);
-    private zoom = 0.0;
-    private redraw = false;
-    private worker = new Worker("mandelbrotWorker.js");
-
-    constructor(canvasElt: HTMLCanvasElement) {
+    constructor(canvasElt) {
+        this.viewport = { width: 0, height: 0, xmin: -3, xmax: 2, ymin: -2.5, ymax: 2.5 };
+        this.escapeRadius = 10;
+        this.maxIterations = 85;
+        this.context = null;
+        this.imageData = null;
+        this.pointerState = new Array();
+        this.pan = complex(0, 0);
+        this.zoom = 0.0;
+        this.redraw = false;
+        this.worker = new Worker("mandelbrotWorker.js");
+        this.handlePointerDown = (ev) => {
+            const that = this;
+            that.pointerState.push(convertPointerEvent(ev));
+            if (that.redraw && that.pointerState.length > 1) {
+                that.render();
+            }
+            console.groupCollapsed(`Pointer down at (${ev.clientX}, ${ev.clientY})`);
+            console.log(`tracking ${that.pointerState.length} pointer events`);
+        };
+        this.handlePointerUp = (ev) => {
+            const that = this;
+            that.pointerState = that.pointerState.filter((x) => x.pointerId !== ev.pointerId);
+            if (that.redraw) {
+                that.render();
+                that.zoom = 0;
+            }
+            console.log(`tracking ${that.pointerState.length} pointer events`);
+            console.log(`Pointer up at (${ev.clientX}, ${ev.clientY})`);
+            console.groupEnd();
+        };
+        this.handlePointerEnter = (ev) => {
+            const that = this;
+            that.canvas.addEventListener("wheel", (ev) => that.handleWheel(ev));
+            console.groupCollapsed(`Pointer entered at (${ev.clientX}, ${ev.clientY})`);
+            console.log(`tracking ${that.pointerState.length} pointer events`);
+        };
+        this.handlePointerLeave = (ev) => {
+            const that = this;
+            that.canvas.removeEventListener("wheel", (ev) => that.handleWheel(ev));
+            console.log(`tracking ${that.pointerState.length} pointer events`);
+            console.log(`Pointer left at (${ev.clientX}, ${ev.clientY})`);
+            console.groupEnd();
+        };
+        this.handlePointerMove = (ev) => {
+            const that = this;
+            const ptrIdx = that.pointerState.findIndex((x) => x.pointerId === ev.pointerId);
+            if (ptrIdx >= 0 && !that.redraw) {
+                const ptr = that.pointerState[ptrIdx];
+                ptr.movement = complexPlus(ptr.movement, complex(ev.movementX, ev.movementY));
+                ptr.position = complex(ev.clientX, ev.clientY);
+                switch (that.pointerState.length) {
+                    case 1:
+                        that.panning(ptr.movement);
+                        that.render();
+                        break;
+                    case 2:
+                        that.touchZooming(that.pointerState[0].position, that.pointerState[1].position);
+                        that.render();
+                        break;
+                    default:
+                        break;
+                }
+                console.log(`pointer moved by (${ev.movementX}, ${ev.movementY})`);
+            }
+        };
         this.canvas = canvasElt;
         this.viewport.width = this.canvas.width;
         this.viewport.height = this.canvas.height;
         let cntxt = this.canvas.getContext("2d", { alpha: false });
-
         if (cntxt == null) {
             console.log("Could not create a 2D rendering context from the canvas.");
             return;
@@ -76,12 +104,10 @@ class MandelbrotApp {
         this.worker.addEventListener("message", (ev) => that.handleMessage(ev));
         this.render();
     }
-
-    private modulusSqr(z: Complex): number {
+    modulusSqr(z) {
         return (z.real * z.real + z.imag * z.imag);
     }
-
-    public render(): void {
+    render() {
         const width = this.viewport.width;
         const height = this.viewport.height;
         const xmin = this.viewport.xmin;
@@ -91,7 +117,6 @@ class MandelbrotApp {
         const size = width * height;
         const reals = new Float32Array(size);
         const imags = new Float32Array(size);
-
         for (let yidx = 0; yidx < height; yidx++) {
             for (let xidx = 0; xidx < width; xidx++) {
                 const pntIdx = xidx + yidx * width;
@@ -100,80 +125,12 @@ class MandelbrotApp {
             }
         }
         this.worker.postMessage([[reals, imags],
-        [this.maxIterations, this.escapeRadius],
-        this.imageData]);
+            [this.maxIterations, this.escapeRadius],
+            this.imageData]);
         this.zoom = 0;
         this.redraw = false;
     }
-
-    private handlePointerDown: (ev: PointerEvent) => void = (ev) => {
-        const that = this;
-
-        that.pointerState.push(convertPointerEvent(ev));
-        if (that.redraw && that.pointerState.length > 1) {
-            that.render();
-        }
-
-        console.groupCollapsed(`Pointer down at (${ev.clientX}, ${ev.clientY})`);
-        console.log(`tracking ${that.pointerState.length} pointer events`);
-    }
-
-    private handlePointerUp: (ev: PointerEvent) => void = (ev) => {
-        const that = this;
-
-        that.pointerState = that.pointerState.filter((x) => x.pointerId !== ev.pointerId);
-        if (that.redraw) {
-            that.render();
-            that.zoom = 0;
-        }
-        console.log(`tracking ${that.pointerState.length} pointer events`);
-        console.log(`Pointer up at (${ev.clientX}, ${ev.clientY})`);
-        console.groupEnd();
-    }
-
-    private handlePointerEnter: (ev: PointerEvent) => void = (ev) => {
-        const that = this;
-        that.canvas.addEventListener("wheel", (ev) => that.handleWheel(ev));
-
-        console.groupCollapsed(`Pointer entered at (${ev.clientX}, ${ev.clientY})`);
-        console.log(`tracking ${that.pointerState.length} pointer events`);
-    }
-
-    private handlePointerLeave: (ev: PointerEvent) => void = (ev) => {
-        const that = this;
-        that.canvas.removeEventListener("wheel", (ev) => that.handleWheel(ev));
-
-        console.log(`tracking ${that.pointerState.length} pointer events`);
-        console.log(`Pointer left at (${ev.clientX}, ${ev.clientY})`);
-        console.groupEnd();
-    }
-
-    private handlePointerMove: (ev: PointerEvent) => void = (ev) => {
-        const that = this;
-        const ptrIdx = that.pointerState.findIndex((x) => x.pointerId === ev.pointerId);
-
-        if (ptrIdx >= 0 && !that.redraw) {
-            const ptr = that.pointerState[ptrIdx];
-            ptr.movement = complexPlus(ptr.movement, complex(ev.movementX, ev.movementY));
-            ptr.position = complex(ev.clientX, ev.clientY);
-
-            switch (that.pointerState.length) {
-                case 1:
-                    that.panning(ptr.movement);
-                    that.render();
-                    break;
-                case 2:
-                    that.touchZooming(that.pointerState[0].position, that.pointerState[1].position);
-                    that.render();
-                    break;
-                default:
-                    break;
-            }
-            console.log(`pointer moved by (${ev.movementX}, ${ev.movementY})`);
-        }
-    }
-
-    private handleWheel(ev: WheelEvent): void {
+    handleWheel(ev) {
         // deltaY < 0 when pushing scroll wheel forward (zooming in)
         const that = this;
         console.log(`wheel rolled (${ev.deltaX}, ${ev.deltaY}, ${ev.deltaZ})`);
@@ -185,21 +142,18 @@ class MandelbrotApp {
             that.render();
         }
     }
-
-    private handleMessage(ev: MessageEvent): void {
+    handleMessage(ev) {
         const that = this;
         const cntxt = that.context;
         if (cntxt != null) {
             cntxt.putImageData(ev.data[0], 0, 0);
-        } else {
+        }
+        else {
             console.log("Canvas 2D rendering context is null.");
         }
     }
-
-
-    private panning(mv: Complex): void {
+    panning(mv) {
         const cntxt = this.canvas.getContext("2d", { alpha: false });
-
         if (cntxt == null) {
             return;
         }
@@ -209,8 +163,7 @@ class MandelbrotApp {
         this.viewport.ymax -= mv.imag / this.viewport.height;
         this.redraw = true;
     }
-
-    private touchZooming(z1: Complex, z2: Complex): void {
+    touchZooming(z1, z2) {
         if (this.context == null) {
             return;
         }
@@ -218,14 +171,12 @@ class MandelbrotApp {
         const centerY = (z1.imag + z2.imag) / 2;
         const dist = Math.sqrt(this.modulusSqr(complexMinus(z1, z2))) / 2;
         const zoom = this.zoom;
-
         if (zoom !== 0) {
             this.wheelZooming(complex(centerX, centerY), zoom / dist);
         }
         this.zoom = dist;
     }
-
-    private wheelZooming(center: Complex, scale: number): void {
+    wheelZooming(center, scale) {
         const xmin = this.viewport.xmin;
         const xmax = this.viewport.xmax;
         const xrange = xmax - xmin;
@@ -243,14 +194,14 @@ class MandelbrotApp {
             this.redraw = true;
             if (scale > 1) {
                 console.log(`Zooming out by ${scale} at (${center.real}, ${center.imag}) from [${xmin}, ${xmax}]x[${ymin},${ymax}] to [${this.viewport.xmin}, ${this.viewport.xmax}]x[${this.viewport.ymin},${this.viewport.ymax}]`);
-            } else {
+            }
+            else {
                 console.log(`Zooming in by ${scale} at (${center.real}, ${center.imag}) from [${xmin}, ${xmax}]x[${ymin},${ymax}] to [${this.viewport.xmin}, ${this.viewport.xmax}]x[${this.viewport.ymin},${this.viewport.ymax}]`);
             }
         }
         this.redraw = true;
     }
-
-    private convertFromScreenCoords(zs: Complex[]): Complex[] {
+    convertFromScreenCoords(zs) {
         const xmin = this.viewport.xmin;
         const xmax = this.viewport.xmax;
         const xrange = xmax - xmin;
@@ -260,13 +211,12 @@ class MandelbrotApp {
         const yrange = ymax - ymin;
         const yscale = yrange / this.viewport.height;
         const len = zs.length;
-        const arr = new Array<Complex>(len);
-
+        const arr = new Array(len);
         for (let idx = 0; idx < len; idx++) {
             const z = zs[idx];
-            arr[idx] = complex(xmin + z.real * xscale,
-                ymin + z.imag * yscale);
+            arr[idx] = complex(xmin + z.real * xscale, ymin + z.imag * yscale);
         }
         return arr;
     }
 }
+//# sourceMappingURL=index.js.map
