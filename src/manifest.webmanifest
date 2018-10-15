@@ -1,0 +1,22 @@
+{
+    "name": "Mandelbrot Set Explorer",
+    "short_name": "Mandelbrot",
+    "lang": "en-US",
+    "display": "fullscreen",
+    "description": "A Mandelbrot set explorer",
+    "scope": "./",
+    "start_url": "./index.html",
+    "background_color": "grey",
+    "icons": [
+        {
+            "src": "../dist/icon-500.png",
+            "sizes": "500x499",
+            "type": "image/png"
+        },
+        {
+            "src": "../dist/icon-1024.png",
+            "sizes": "1025x1024",
+            "type": "image/png"
+        }
+    ]
+}

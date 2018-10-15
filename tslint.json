@@ -1,9 +1,14 @@
 {
-    "defaultSeverity": "error",
+    "defaultSeverity": "warning",
     "extends": [
-        "tslint:recommended"
+        "tslint:latest",
+        "tslint-config-prettier"
     ],
     "jsRules": {},
-    "rules": {},
+    "rules": {
+        "no-console": false,
+        "no-this-assignment": [true, { "allowed-names": ["^that$"] }],
+        "interface-over-type-literal": false
+    },
     "rulesDirectory": []
 }

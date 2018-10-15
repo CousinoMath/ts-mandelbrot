@@ -1,16 +1,20 @@
 {
     "compileOnSave": false,
     "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "~*": ["./src/*"]
+        },
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
         "sourceMap": true,
-        "outDir": "./dist/",
         "strict": true,
-        "target": "es6",
+        "target": "es2015",
         "lib": [
             "dom",
-            "es6"
-        ]
+            "es2015"
+        ],
+        "outDir": "./dist/"
     },
     "files": [
         "./src/index.ts"

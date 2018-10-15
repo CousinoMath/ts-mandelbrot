@@ -1,12 +1,13 @@
 {
+    "compileOnSave": false,
     "compilerOptions": {
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
         "sourceMap": true,
         "strict": true,
-        "target": "es6",
+        "target": "es2015",
         "lib": [
-            "es6",
+            "es2015",
             "webworker"
         ],
         "outDir": "./dist/"
