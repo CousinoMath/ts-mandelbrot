@@ -30,10 +30,7 @@ function mandelbrot(
     while (iter < maxIters && modsq < rSqr) {
       const tmp = zreal + zimag;
       const tmp2 = tmp * tmp;
-      [zreal, zimag] = [
-        zresq - zimsq + creal,
-        tmp2 - modsq + cimag
-      ];
+      [zreal, zimag] = [zresq - zimsq + creal, tmp2 - modsq + cimag];
       zresq = zreal * zreal;
       zimsq = zimag * zimag;
       modsq = zresq + zimsq;
@@ -41,7 +38,7 @@ function mandelbrot(
     }
     const modulus = Math.sqrt(modsq);
     if (iter < maxIters) {
-      const nu = Math.log2(Math.log(modulus) / logR);
+      const nu = Math.log2(Math.log2(modulus));
       iterations[pntIdx] = iter + 1 - nu;
     } else {
       iterations[pntIdx] = maxIters;
@@ -60,9 +57,15 @@ function mandelbrot(
     let color = { red: 0, green: 0, blue: 0 };
     if (iter < maxIters) {
       const histIdx = Math.floor(iter);
-      const color1 = assignColor(iterHistogram[histIdx]);
-      const color2 = assignColor(iterHistogram[histIdx + 1]);
-      color = linearInterpolate(color1, color2, iter % 1);
+      // const color1 = assignColor(iterHistogram[histIdx]);
+      // const color2 = assignColor(iterHistogram[histIdx + 1]);
+      // color = linearInterpolate(color1, color2, iter % 1);
+      const alpha = iter % 1;
+      const iterHist =
+        (1 - alpha) * iterHistogram[histIdx] +
+        alpha * iterHistogram[histIdx + 1];
+      const hue = 255 - Math.round(255 * iterHist);
+      color = HSVtoRGB(hue, 1, 1);
     }
     imgData.data[imgIdx++] = Math.floor(color.red);
     imgData.data[imgIdx++] = Math.floor(color.green);

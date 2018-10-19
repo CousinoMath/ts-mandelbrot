@@ -42,6 +42,10 @@ function convertPointerEvent(ev: PointerEvent): PointerCache {
   };
 }
 
+function precision(x: number): number {
+  return Math.round(1000000 * x) / 1000000;
+}
+
 class MandelbrotApp {
   private viewport: Viewport2D = {
     height: 0,
@@ -59,16 +63,16 @@ class MandelbrotApp {
   private pointerState = new Array<PointerCache>();
   private zoom = 0.0;
   private redraw = false;
-  private worker = new Worker("mandelbrotWorker.ts");
+  private worker = new Worker('mandelbrotWorker.ts');
 
   constructor(canvasElt: HTMLCanvasElement) {
     this.canvas = canvasElt;
     this.viewport.width = this.canvas.width;
     this.viewport.height = this.canvas.height;
-    const cntxt = this.canvas.getContext("2d", { alpha: false });
+    const cntxt = this.canvas.getContext('2d', { alpha: false });
 
     if (cntxt == null) {
-      console.log("Could not create a 2D rendering context from the canvas.");
+      console.log('Could not create a 2D rendering context from the canvas.');
       return;
     }
     this.context = cntxt;
@@ -79,18 +83,18 @@ class MandelbrotApp {
       this.viewport.height
     );
     const that = this;
-    this.canvas.addEventListener("pointerenter", ev =>
+    this.canvas.addEventListener('pointerenter', ev =>
       that.handlePointerEnter(ev)
     );
-    this.canvas.addEventListener("pointerleave", ev =>
+    this.canvas.addEventListener('pointerleave', ev =>
       that.handlePointerLeave(ev)
     );
-    this.canvas.addEventListener("pointerdown", ev =>
+    this.canvas.addEventListener('pointerdown', ev =>
       that.handlePointerDown(ev)
     );
-    document.addEventListener("pointerup", ev => that.handlePointerUp(ev));
-    document.addEventListener("pointermove", ev => that.handlePointerMove(ev));
-    this.worker.addEventListener("message", ev => that.handleMessage(ev));
+    document.addEventListener('pointerup', ev => that.handlePointerUp(ev));
+    document.addEventListener('pointermove', ev => that.handlePointerMove(ev));
+    this.worker.addEventListener('message', ev => that.handleMessage(ev));
     this.render();
   }
 
@@ -150,7 +154,7 @@ class MandelbrotApp {
 
   private handlePointerEnter: (ev: PointerEvent) => void = ev => {
     const that = this;
-    that.canvas.addEventListener("wheel", e => that.handleWheel(e));
+    that.canvas.addEventListener('wheel', e => that.handleWheel(e));
 
     console.groupCollapsed(`Pointer entered at (${ev.clientX}, ${ev.clientY})`);
     console.log(`tracking ${this.pointerState.length} pointer events`);
@@ -158,7 +162,7 @@ class MandelbrotApp {
 
   private handlePointerLeave: (ev: PointerEvent) => void = ev => {
     const that = this;
-    that.canvas.removeEventListener("wheel", e => that.handleWheel(e));
+    that.canvas.removeEventListener('wheel', e => that.handleWheel(e));
 
     console.log(`tracking ${this.pointerState.length} pointer events`);
     console.log(`Pointer left at (${ev.clientX}, ${ev.clientY})`);
@@ -213,13 +217,17 @@ class MandelbrotApp {
     const cntxt = this.context;
     if (cntxt != null) {
       cntxt.putImageData(ev.data[0], 0, 0);
+      cntxt.font = 'caption';
+      cntxt.textBaseline = 'bottom';
+      cntxt.fillText(`Region: [${precision(this.viewport.xmin)}, ${precision(this.viewport.xmax)}]x[${precision(this.viewport.ymin)},${precision(this.viewport.ymax)}]`, 10, 10);
+      cntxt.fillText(`Iteration limit: ${this.maxIterations}`, 10, 30);
     } else {
-      console.log("Canvas 2D rendering context is null.");
+      console.log('Canvas 2D rendering context is null.');
     }
   }
 
   private panning(mv: Complex): void {
-    const cntxt = this.canvas.getContext("2d", { alpha: false });
+    const cntxt = this.canvas.getContext('2d', { alpha: false });
 
     if (cntxt == null) {
       return;
@@ -255,7 +263,7 @@ class MandelbrotApp {
     const ymax = this.viewport.ymax;
     const yrange = ymax - ymin;
     const yscale = yrange / this.viewport.height;
-    const epsilon = Number.EPSILON * scale;
+    const epsilon = Number.EPSILON;
     if (xscale > epsilon && yscale > epsilon) {
       this.viewport.xmax = center.real + scale * (xmax - center.real);
       this.viewport.xmin = center.real + scale * (xmin - center.real);
@@ -283,8 +291,11 @@ class MandelbrotApp {
           }]`
         );
       }
+      this.maxIterations = Math.max(85, Math.round(this.maxIterations * (scale > 1 ? 100/110 : 110/100)));
+      this.redraw = true;
+    } else {
+      console.log('Zoom limit reached');
     }
-    this.redraw = true;
   }
 
   private convertFromScreenCoords(zs: Complex[]): Complex[] {
@@ -307,9 +318,9 @@ class MandelbrotApp {
   }
 }
 
-let canvas = document.getElementById("mandelbrot") as HTMLCanvasElement;
+let canvas = document.getElementById('mandelbrot') as HTMLCanvasElement;
 if (canvas != null) {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   const mandelbrot = new MandelbrotApp(canvas);
-}  
+}
