@@ -1,0 +1,5 @@
+dist/index.html
+dist/*
+.cache
+dist/assets/*
+yarn.lock
