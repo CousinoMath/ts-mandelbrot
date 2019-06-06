@@ -1,5 +1,4 @@
-dist/index.html
-dist/*
+node_modules
+dist
 .cache
-dist/assets/*
 yarn.lock

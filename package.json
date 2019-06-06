@@ -1,8 +1,8 @@
 {
-  "name": "mandelbrot-pwa",
+  "name": "ts-mandelbrot",
   "version": "0.0.0",
   "description": "Mandelbrot set viewer progressive web app",
-  "main": "index.html",
+  "browser": "index.html",
   "scripts": {
     "build": "parcel build ./src/index.html --public-url ./ --no-minify",
     "clean": "rm ./dist/*.*.*",
